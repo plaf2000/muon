@@ -1,0 +1,46 @@
+# Basic training configuration for TinyViT on CIFAR-10
+
+experiment:
+  name: "basic_training_vit_cifar10"
+  seed: 42
+  device: "auto"  # "auto", "cuda", "mps", or "cpu"
+
+dataset:
+  name: "cifar10"
+  root: "./data"
+  full_batch: true  # Use full dataset in one batch
+  train_subset_size: 2000  # Use only 10K samples for training (same subset across all runs for comparability)
+
+model:
+  type: "tiny_vit"
+  config:
+    img_size: 32
+    patch_size: 4
+    num_classes: 10
+    embed_dim: 128
+    depth: 4
+    num_heads: 4
+    mlp_ratio: 4.0
+    dropout: 0.0
+
+optimizer:
+  type: "muon"  # "muon", "sgd", or "adamw"
+  config:
+    lr: 0.02
+    momentum: 0.95
+    ns_depth: 5
+    use_rms: false
+    use_orthogonalization: true
+    weight_decay: 0.0
+    adamw_lr: 0.001  # For output layers when using Muon
+
+training:
+  num_epochs: 50
+  loss_fn: "cross_entropy"
+
+logging:
+  wandb:
+    enabled: true
+    # Project name is always "muon" - set in code for consistency
+  save_dir: "./results/basic_training"
+  save_frequency: 10  # Save checkpoint every N epochs

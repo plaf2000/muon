@@ -1,0 +1,41 @@
+# Basic training configuration for MLP on MNIST
+
+experiment:
+  name: "basic_training_mlp_mnist"
+  seed: 42
+  device: "auto"  # "auto", "cuda", "mps", or "cpu"
+
+dataset:
+  name: "mnist"
+  root: "./data"
+  full_batch: true  # Use full dataset in one batch
+
+model:
+  type: "mlp"
+  config:
+    input_size: 784
+    hidden_sizes: [128, 64]
+    num_classes: 10
+    dropout: 0.0
+
+optimizer:
+  type: "adamw"  # "muon", "sgd", or "adamw"
+  config:
+    lr: 0.02
+    momentum: 0.95
+    ns_depth: 5
+    use_rms: false
+    use_orthogonalization: true
+    weight_decay: 0.0
+    adamw_lr: 0.001  # For output layers when using Muon
+
+training:
+  num_epochs: 50
+  loss_fn: "cross_entropy"
+
+logging:
+  wandb:
+    enabled: true
+    # Project name is always "muon" - set in code for consistency
+  save_dir: "./results/basic_training"
+  save_frequency: 10  # Save checkpoint every N epochs

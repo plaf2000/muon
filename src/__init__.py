@@ -1,0 +1,3 @@
+"""
+Muon optimizer research project.
+"""

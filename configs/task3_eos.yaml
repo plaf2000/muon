@@ -1,0 +1,50 @@
+# Task 3: Edge-of-Stability and Curvature Analysis Configuration
+
+experiment:
+  name: "task3_eos"
+  seed: 42
+  device: "cuda"  # or "cpu"
+
+dataset:
+  name: "mnist"  # or "cifar10", "toy"
+  root: "./data"
+  batch_size: null  # null for full-batch training
+
+model:
+  type: "mlp"
+  input_size: 784  # 28*28 for MNIST
+  hidden_sizes: [128, 64]
+  num_classes: 10
+
+training:
+  num_epochs: 200
+  loss_fn: "cross_entropy"
+
+optimizer:
+  name: "muon"
+  lr: 0.01
+  ns_depth: 1
+  use_rms: true
+  use_orthogonalization: true
+  weight_decay: 0.0
+
+eos_analysis:
+  track_loss: true
+  track_lambda_max: true
+  track_step_size: true
+  track_frequency: 1
+  stability_threshold: 2.0  # 2/η threshold for EOS
+
+curvature_analysis:
+  compute_lambda_grad: true
+  compute_lambda_muon: true
+  track_frequency: 1
+  preconditioned: true
+
+hessian:
+  max_iter: 100
+  tol: 1e-6
+
+output:
+  save_dir: "./results/task3"
+  save_frequency: 10

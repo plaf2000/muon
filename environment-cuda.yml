@@ -1,0 +1,25 @@
+name: muon
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - numpy>=1.24.0
+  - matplotlib>=3.7.0
+  - pyyaml>=6.0
+  - tqdm>=4.65.0
+  # Note: CUDA toolkit and PyTorch CUDA versions should match your system
+  # Common versions: 11.8, 12.1, 12.4
+  # Check your CUDA version with: nvidia-smi
+  # Then install matching PyTorch from: https://pytorch.org/get-started/locally/
+  - pip:
+    # Install PyTorch with CUDA support via pip (recommended)
+    # For CUDA 11.8: pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+    # For CUDA 12.1: pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+    # For CUDA 12.4: pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
+    - torch>=2.0.0
+    - torchvision>=0.15.0
+    - wandb>=0.15.0
