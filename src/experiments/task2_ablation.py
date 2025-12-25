@@ -52,11 +52,10 @@ def make_variants(cfg: Dict[str, Any]) -> List[Tuple[str, Dict[str, Any]]]:
     ortho_list = abl.get("use_orthogonalization", [True, False])
     wd_list = abl.get("weight_decay", [0.0, 0.01])
 
-    # Optional preset variants. If provided, we *use these* instead of raw ortho/rms toggles.
+    # Optional preset variants
     preset_variants = abl.get("variants", None)
 
     def preset_to_flags(name: str) -> Dict[str, Any]:
-        # Keys must match basic_training.py -> Muon(...) signature
         if name == "full":
             return {"use_rms": True, "use_orthogonalization": True}
         if name == "no_ortho":
@@ -113,10 +112,9 @@ def make_variants(cfg: Dict[str, Any]) -> List[Tuple[str, Dict[str, Any]]]:
 
 
 def run_training_with_muon_variant(base_config: Dict[str, Any], run_suffix: str, muon_config: Dict[str, Any]) -> bool:
-    """
-    Run basic_training.py with optimizer fixed to Muon and given config.
-    """
-
+   
+    #Run basic_training.py with optimizer fixed to Muon and given config
+    
     config = copy.deepcopy(base_config)
 
     config["optimizer"] = {
@@ -124,7 +122,6 @@ def run_training_with_muon_variant(base_config: Dict[str, Any], run_suffix: str,
         "config": muon_config
     }
 
-    # Keep names short and stable
     config["experiment"]["name"] = f"t2_{run_suffix}"
 
     temp_config_path = Path(f"configs/temp_task2_{run_suffix}.yaml")

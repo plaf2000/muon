@@ -1,50 +1,66 @@
-# Task 3: Edge-of-Stability and Curvature Analysis Configuration
+# Task 3(A): Edge-of-Stability Configuration (multi-optimizer runs)
 
 experiment:
   name: "task3_eos"
   seed: 42
-  device: "cuda"  # or "cpu"
+  device: "auto"
 
 dataset:
-  name: "mnist"  # or "cifar10", "toy"
+  name: "mnist"
   root: "./data"
-  batch_size: null  # null for full-batch training
+  full_batch: true
+  train_subset_size: 10000   # optional speedup
 
 model:
   type: "mlp"
-  input_size: 784  # 28*28 for MNIST
-  hidden_sizes: [128, 64]
-  num_classes: 10
+  config:
+    input_size: 784
+    hidden_sizes: [128, 64]
+    num_classes: 10
+    dropout: 0.0
 
 training:
   num_epochs: 200
   loss_fn: "cross_entropy"
 
-optimizer:
-  name: "muon"
-  lr: 0.01
-  ns_depth: 1
-  use_rms: true
-  use_orthogonalization: true
-  weight_decay: 0.0
-
 eos_analysis:
-  track_loss: true
-  track_lambda_max: true
-  track_step_size: true
-  track_frequency: 1
-  stability_threshold: 2.0  # 2/η threshold for EOS
-
-curvature_analysis:
-  compute_lambda_grad: true
-  compute_lambda_muon: true
-  track_frequency: 1
-  preconditioned: true
+  track_frequency: 5
 
 hessian:
-  max_iter: 100
+  max_iter: 50
   tol: 1e-6
+
+logging:
+  wandb:
+    enabled: true
+    project: "muon"
+    # entity: "your_wandb_username_or_team"  # optional
 
 output:
   save_dir: "./results/task3"
-  save_frequency: 10
+
+# Run 3 separate W&B runs (one per optimizer)
+optimizers:
+  gd:
+    type: "gd"
+    config:
+      lr: 0.01
+      momentum: 0.0
+      weight_decay: 0.0
+
+  adamw:
+    type: "adamw"
+    config:
+      lr: 0.001
+      weight_decay: 0.01
+
+  muon:
+    type: "muon"
+    config:
+      lr: 0.02
+      momentum: 0.95
+      ns_depth: 5
+      use_rms: true
+      use_orthogonalization: true
+      weight_decay: 0.0
+      adamw_lr: 0.001
