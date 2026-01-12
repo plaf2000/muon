@@ -13,7 +13,7 @@ import wandb
 from datetime import datetime
 
 from src.models import MLP, TinyViT
-from src.optimizers import Muon
+from src.optimizers import Muon, MuonNoise
 from src.utils.data import load_mnist, load_cifar10
 from src.utils.training import train_full_batch, evaluate_model
 from src.utils.visualization import visualize_predictions, plot_training_history, plot_confusion_matrix, plot_lambda_max
@@ -109,7 +109,7 @@ def create_optimizer(model: nn.Module, optimizer_config: dict):
     config = optimizer_config.get("config", {})
     optimizers = []
     
-    if optimizer_type == "muon":
+    if optimizer_type == "muon" or optimizer_type == "muon_noise":
         # Separate parameters for Muon (2D weight matrices) and AdamW (others)
         muon_params = []
         adamw_params = []
@@ -128,15 +128,25 @@ def create_optimizer(model: nn.Module, optimizer_config: dict):
         
         if len(muon_params) > 0:
             print(f"Muon optimizer: {len(muon_params)} parameter groups")
-            muon_opt = Muon(
-                muon_params,
-                lr=config.get("lr", 0.02),
-                momentum=config.get("momentum", 0.95),
-                ns_depth=config.get("ns_depth", 5),
-                use_rms=config.get("use_rms", False),
-                use_orthogonalization=config.get("use_orthogonalization", True),
-                weight_decay=config.get("weight_decay", 0.0)
-            )
+            if optimizer_type == "muon_noise":
+                muon_opt = MuonNoise(
+                    muon_params,
+                    lr=config.get("lr", 0.02),
+                    momentum=config.get("momentum", 0.95),
+                    ns_depth=config.get("ns_depth", 5),
+                    use_rms=config.get("use_rms", False),
+                    weight_decay=config.get("weight_decay", 0.0),
+                )
+            else:
+                muon_opt = Muon(
+                    muon_params,
+                    lr=config.get("lr", 0.02),
+                    momentum=config.get("momentum", 0.95),
+                    ns_depth=config.get("ns_depth", 5),
+                    use_rms=config.get("use_rms", False),
+                    use_orthogonalization=config.get("use_orthogonalization", True),
+                    weight_decay=config.get("weight_decay", 0.0)
+                )
             optimizers.append(muon_opt)
         
         if len(adamw_params) > 0:

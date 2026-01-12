@@ -1,0 +1,67 @@
+# Task 1: Sharpness Tracking Configuration
+# Compare λ_max evolution for Muon, SGD, and AdamW
+# This config is used as a template - Task 1 script will run training
+# with each optimizer separately using basic_training.py
+
+experiment:
+  name: "task4_noise"
+  seed: 42
+  device: "auto"  # "auto", "cuda", "mps", or "cpu"
+
+dataset:
+  name: "mnist"  # or "cifar10"
+  root: "./data"
+  full_batch: true  # Full-batch training
+
+model:
+  type: "mlp"
+  config:
+    input_size: 784  # 28*28 for MNIST
+    hidden_sizes: [128, 64]
+    num_classes: 10
+    dropout: 0.0
+
+training:
+  num_epochs: 100
+  loss_fn: "cross_entropy"
+
+# # Curvature tracking enabled for Task 1
+# curvature:
+#   track: true
+#   frequency: 5  # Track λ_max every N epochs
+#   max_iter: 50  # For power iteration
+#   tol: 1e-6
+
+logging:
+  wandb:
+    enabled: true
+  save_dir: "./results/task4"
+  save_frequency: 10
+
+# Optimizer configs (used by task1_sharpness.py script)
+# Each optimizer will be tested separately
+optimizers:
+  # muon:
+  #   lr: 0.02
+  #   momentum: 0.95
+  #   ns_depth: 5
+  #   use_rms: false
+  #   use_orthogonalization: true
+  #   weight_decay: 0.0
+  #   adamw_lr: 0.001
+  
+  muon_noise:
+    lr: 0.02
+    momentum: 0.95
+    ns_depth: 5
+    use_rms: true
+    weight_decay: 0.0
+  
+  # sgd:
+  #   lr: 0.01
+  #   momentum: 0.0
+  #   weight_decay: 0.0
+  
+  # adamw:
+  #   lr: 0.001
+  #   weight_decay: 0.01

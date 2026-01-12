@@ -180,3 +180,124 @@ class Muon(Optimizer):
                 p.add_(update.reshape(p.shape), alpha=-group["lr"])
         
         return loss
+    
+
+def muon_noisy_update(param, momentum, second_momentum, beta=0.95, ns_steps=5, use_rms=False, lam=1, lr=0.02, weight_decay=0.0):
+    """
+    Compute Muon update direction with added Gaussian noise for exploration.
+    
+    Args:
+        momentum: Momentum buffer
+        second_momentum: Second moment buffer
+        beta: Momentum coefficient
+        ns_steps: Number of Newton-Schulz steps
+        nesterov: Whether to use Nesterov momentum
+        use_orthogonalization: Whether to apply orthogonalization
+        use_rms: Whether to apply RMS normalization (for ablation)
+        noise_scale: Standard deviation of Gaussian noise to add to updates
+        weight_decay: Weight decay coefficient
+    Returns:
+        Update direction tensor
+    """
+    N = param.grad.numel()
+    r = lam / N
+    momentum.lerp_(param.grad + param * r, 1 - beta)
+    momentum = param.grad.lerp_(momentum, beta)
+    
+    if momentum.ndim == 4:  # for the case of conv filters
+        momentum = momentum.view(len(momentum), -1)
+    
+    momentum = zeropower_via_newtonschulz5(momentum, steps=ns_steps)
+
+    second_momentum = beta * second_momentum + (1 - beta) * momentum * momentum
+
+    update = momentum / (second_momentum.sqrt() + lam / N)
+
+    scale = max(1, param.grad.size(-2) / param.grad.size(-1))**0.5
+
+    if use_rms:
+        scale = 0.2 * (update.size(-2) * update.size(-1))**0.5 / (update.norm() + 1e-7)
+
+    param.mul_(1 - lr * weight_decay)
+    param.add_(update.reshape(param.shape), alpha=-lr * scale)
+    param.add_(torch.randn_like(param) / (N * second_momentum + lam).sqrt())
+
+
+    
+    return update
+
+class MuonNoise(Optimizer):
+    """
+    MuonNoise optimizer - Muon with added Gaussian noise for exploration.
+    
+    Args:
+        params: Iterable of parameters to optimize
+        lr: Learning rate
+        momentum: Momentum coefficient (default: 0.95)
+        ns_depth: Number of Newton-Schulz iteration steps (default: 5)
+        noise_scale: Standard deviation of Gaussian noise to add to updates
+        use_rms: Whether to use RMS normalization (for ablation study)
+        use_orthogonalization: Whether to use orthogonalization (for ablation study)
+        weight_decay: AdamW-style weight decay coefficient
+        nesterov: Whether to use Nesterov momentum (default: True)
+    """
+    
+    def __init__(
+        self,
+        params,
+        lr: float = 0.02,
+        momentum: float = 0.95,
+        ns_depth: int = 5,
+        use_rms: bool = False,
+        weight_decay: float = 0.0,
+    ):
+        defaults = dict(
+            lr=lr,
+            momentum=momentum,
+            ns_depth=ns_depth,
+            use_rms=use_rms,
+            weight_decay=weight_decay,
+        )
+        super().__init__(params, defaults)
+        
+    @torch.no_grad()
+    def step(self, closure=None):
+        """
+        Performs a single optimization step.
+        
+        Args:
+            closure: A closure that reevaluates the model and returns the loss
+            
+        Returns:
+            Loss value if closure is provided, None otherwise
+        """
+        loss = None
+        if closure is not None:
+            with torch.enable_grad():
+                loss = closure()
+        
+        for group in self.param_groups:
+            for p in group["params"]:
+                if p.grad is None:
+                    continue
+                
+                state = self.state[p]
+                
+                # Initialize momentum buffer
+                if len(state) == 0:
+                    state["momentum_buffer"] = torch.zeros_like(p)
+                    state["second_momentum_buffer"] = torch.zeros_like(p)
+                
+                # Compute Muon update
+                muon_noisy_update(
+                    p,
+                    state["momentum_buffer"],
+                    state["second_momentum_buffer"],
+                    beta=group["momentum"],
+                    ns_steps=group["ns_depth"],
+                    use_rms=group["use_rms"],
+                    lr=group["lr"],
+                    weight_decay=group["weight_decay"]
+                )
+        
+        return loss

@@ -2,6 +2,6 @@
 Optimizer implementations.
 """
 
-from .muon import Muon
+from .muon import Muon, MuonNoise
 
-__all__ = ["Muon"]
+__all__ = ["Muon", "MuonNoise"]
